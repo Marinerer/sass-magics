@@ -1,5 +1,7 @@
 @use 'true' as *;
 @use '../core/map' as *;
+@use "sass:list";
+@use "sass:map";
 
 $test-map: (
   a: 1,
@@ -20,12 +22,12 @@ $test-map: (
         wide: 1680px
       )
     );
-    $first: nth($result, 1);
-    $third: nth($result, 3);
-    @include assert-equal(nth($first, 1), mobile);
-    @include assert-equal(nth($first, 2), 320px);
-    @include assert-equal(nth($third, 1), desktop);
-    @include assert-equal(nth($third, 2), 1024px);
+    $first: list.nth($result, 1);
+    $third: list.nth($result, 3);
+    @include assert-equal(list.nth($first, 1), mobile);
+    @include assert-equal(list.nth($first, 2), 320px);
+    @include assert-equal(list.nth($third, 1), desktop);
+    @include assert-equal(list.nth($third, 2), 1024px);
   }
   
   @include it('map-extend') {

@@ -1,5 +1,9 @@
 @use 'true' as *;
 @use '../core/list' as *;
+@use "sass:math";
+@use "sass:list";
+@use "sass:map";
+@use "sass:meta";
 
 $list: (40px, 60px, 20px, 80px);
 @function each-callback($item, $index, $list) {
@@ -13,7 +17,7 @@ $list: (40px, 60px, 20px, 80px);
   }
 
   @include it('list-subset') {
-    @include assert-equal(list-subset($list, 3, length($list)), (40px, 60px));
+    @include assert-equal(list-subset($list, 3, list.length($list)), (40px, 60px));
     @include assert-equal(list-subset($list, 3), (40px, 60px));
     @include assert-equal(list-subset($list, 2, 3), (40px, 80px));
   }
@@ -41,7 +45,7 @@ $list: (40px, 60px, 20px, 80px);
   }
 
   @include it('list-each') {
-    @include assert-equal(list-each($list, get-function(each-callback)), (80px, 120px, 40px, 160px));
+    @include assert-equal(list-each($list, meta.get-function(each-callback)), (80px, 120px, 40px, 160px));
   }
 
   @include it('list-sort') {

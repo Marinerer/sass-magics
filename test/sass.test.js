@@ -15,7 +15,8 @@ const importers = [
   }
 ]
 
-const testFiles = glob.sync(path.resolve(process.cwd(), 'test/**/*.test.scss'))
+// const testFiles = glob.sync(path.resolve(process.cwd(), 'test/**/*.test.scss'))
+const testFiles = glob.sync('./test/**/*.test.scss')
 testFiles.forEach((file) => {
   sassTrue.runSass({ describe, it }, file, { importers })
 })
