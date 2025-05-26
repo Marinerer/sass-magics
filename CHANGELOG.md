@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Marinerer/sass-magics/compare/v1.0.3...v1.1.0) (2025-05-26)
+
+
+### 🚀 Features
+
+* Upgrade sass syntax ([27ed988](https://github.com/Marinerer/sass-magics/commit/27ed9889ef3593df3363ef423f66a3a860129273))
+
 ## [1.0.3](https://github.com/Meqn/sass-magics/compare/v1.0.2...v1.0.3) (2024-07-12)
 
 
