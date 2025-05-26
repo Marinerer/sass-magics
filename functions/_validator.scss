@@ -1,4 +1,5 @@
 @use 'sass:string';
+@use "sass:meta";
 
 /// 验证器
 /// @function is-color($color)
@@ -10,9 +11,9 @@
 /// -----------------------------------------------------
 @function is-color($color) {
   // currentColor, var(--color-blue);
-  @if type-of($color) == color or $color == currentColor {
+  @if meta.type-of($color) == color or $color == currentColor {
     @return true;
-  } @else if type-of($color) == 'string' and str-slice($color, 1, 6) == 'var(--' {
+  } @else if meta.type-of($color) == 'string' and string.slice($color, 1, 6) == 'var(--' {
     @return true;
   } @else {
     @return false

@@ -15,7 +15,7 @@
   $width: 1em,
   $height: 1em
 ) {
-  @if not index(
+  @if not list.index(
     ("up", "right", "down", "left", "up-right", "up-left", "down-right", "down-left"),
     $direction
   ) {

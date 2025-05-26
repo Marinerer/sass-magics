@@ -18,34 +18,34 @@
 /// @link https://github.com/meqn/sass-magic
 /// @example scss
 /// map-sort((width: 100px), get-function('item-callback'), descend)
-/// @function item-callback($item, $index, $list) { @return nth($item, 2); }
+/// @function item-callback($item, $index, $list) { @return list.nth($item, 2); }
 /// -----------------------------------------------------
 @function map-sort($map, $callback: null, $order: ascend) {
-  @if (length($map) < 2) {
+  @if (list.length($map) < 2) {
     @return $map;
   }
 
   @if ($callback) {
-    @if type-of($callback) != function {
+    @if meta.type-of($callback) != function {
       @error "[map-sort]: The 'callback' parameter must be a function.";
     }
   }
 
   $map-sorted: ();
-  $map-keys: map-keys($map);
-  $map-values: map-values($map);
+  $map-keys: map.keys($map);
+  $map-values: map.values($map);
   @if $callback {
     $map-values: list-each($map, $callback);
   }
   $map-values-sorted: list-sort($map-values, $order);
 
   @each $value in $map-values-sorted {
-    $index: index($map-values, $value);
-    $key: nth($map-keys, $index);
-    $map-sorted: map-merge(
+    $index: list.index($map-values, $value);
+    $key: list.nth($map-keys, $index);
+    $map-sorted: map.merge(
       $map-sorted,
       (
-        $key: map-get($map, $key),
+        $key: map.get($map, $key),
       )
     );
   }
@@ -61,23 +61,23 @@
 /// @link https://github.com/meqn/sass-magic
 /// -----------------------------------------------------
 @function map-extend($maps...) {
-  $last: nth($maps, -1);
+  $last: list.nth($maps, -1);
   $deep: false;
   $result: ();
 
-  @if type-of($last) == bool {
+  @if meta.type-of($last) == bool {
     $deep: $last;
     $maps: list-remove($maps, $last);
   }
 
   @each $map in $maps {
-    @if type-of($map) != map {
+    @if meta.type-of($map) != map {
       @error "[map-extend]: The 'maps' parameter must be a map.";
     }
     @if $deep {
       $result: map.deep-merge($result, $map);
     } @else {
-      $result: map-merge($result, $map);
+      $result: map.merge($result, $map);
     }
   }
   

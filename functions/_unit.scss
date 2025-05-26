@@ -1,5 +1,6 @@
 @use "sass:math";
 @use "sass:meta";
+@use "sass:list";
 
 /// 单位转换
 /// @function strip-unit($value)
@@ -26,11 +27,11 @@ $_base-font-size: 16px !default;
 /// @return {boolean} 是否相等
 /// -----------------------------------------------------
 @function compare-unit($values...) {
-  $unit: unit(nth($values, 1));
+  $unit: math.unit(list.nth($values, 1));
   $equal: true;
 
   @each $value in $values {
-    @if unit($value) != $unit {
+    @if math.unit($value) != $unit {
       $equal: false;
     }
   }
@@ -44,8 +45,8 @@ $_base-font-size: 16px !default;
 /// @return {string | number} $unit是number时返回number，否则返回string
 /// -----------------------------------------------------
 @function join-unit($value, $unit: px) {
-  $_valueUnit: unit($value);
-  $_unit: if(type-of($unit) == number, unit($unit), $unit);
+  $_valueUnit: math.unit($value);
+  $_unit: if(meta.type-of($unit) == number, math.unit($unit), $unit);
 
   @if $_valueUnit != '' {
     @if $_valueUnit != $_unit {
@@ -53,7 +54,7 @@ $_base-font-size: 16px !default;
     }
     @return $value;
   } @else {
-    @if type-of($unit) == number {
+    @if meta.type-of($unit) == number {
       @return $value * $unit;
     }
     @return $value + $unit;
@@ -66,14 +67,14 @@ $_base-font-size: 16px !default;
 /// @return {number}
 /// -----------------------------------------------------
 @function add-unit($value, $unit: px) {
-  $valueUnit: unit($value);
+  $valueUnit: math.unit($value);
   @if $valueUnit != '' {
-    @if unit($value) != $unit {
+    @if math.unit($value) != $unit {
       @warn '[add-unit]: Parameter units are different.';
     }
     @return $value;
   } @else {
-    @if type-of($unit) == number {
+    @if meta.type-of($unit) == number {
       @return $value * $unit;
     } @else {
       @if $unit == 'px' {
@@ -98,11 +99,11 @@ $_base-font-size: 16px !default;
 /// @return {number}
 /// -----------------------------------------------------
 @function px2rem($value, $base: $_base-font-size) {
-  @if unit($value) == 'rem' {
+  @if math.unit($value) == 'rem' {
     @return $value;
   }
 
-  @if unit($value) != px or unit($base) != px {
+  @if math.unit($value) != px or math.unit($base) != px {
     @error '[px2rem]: The unit must be `px`.';
   }
 
@@ -115,11 +116,11 @@ $_base-font-size: 16px !default;
 /// @return {number}
 /// -----------------------------------------------------
 @function px2em($value, $base: $_base-font-size) {
-  @if unit($value) == 'em' {
+  @if math.unit($value) == 'em' {
     @return $value;
   }
 
-  @if unit($value) != px or unit($base) != px {
+  @if math.unit($value) != px or math.unit($base) != px {
     @error '[px2rem]: The unit must be `px`.';
   }
 

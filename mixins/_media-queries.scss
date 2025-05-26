@@ -1,6 +1,7 @@
 @use 'sass:math';
 @use 'sass:map';
 @use 'sass:list';
+@use "sass:meta";
 
 @use '../core/map' as *;
 
@@ -83,9 +84,9 @@ $_breakpoints: (
 /// -----------------------------------------------------
 @mixin respond-to($key, $breakpoints: _breakpoints-segment($_breakpoints)) {
   $point: map-get($map: $breakpoints, $key: $key);
-  @if type-of($point) == 'list' {
-    $min: nth($list: $point, $n: 1);
-    $max: nth($list: $point, $n: 2);
+  @if meta.type-of($point) == 'list' {
+    $min: list.nth($list: $point, $n: 1);
+    $max: list.nth($list: $point, $n: 2);
     @media (min-width: $min) and (max-width: $max) {
       @content;
     }
@@ -113,7 +114,7 @@ $_breakpoints: (
   $media-query: '';
 
   @if $min {
-    @if type-of($min) == number {
+    @if meta.type-of($min) == number {
       $min-width: $min;
     } @else {
       $min-width: _get-breakpoint($min, $breakpoints);
@@ -121,7 +122,7 @@ $_breakpoints: (
   }
 
   @if $max {
-    @if type-of($max) == number {
+    @if meta.type-of($max) == number {
       $max-width: $max;
     } @else {
       $max-width: _get-breakpoint($max, $breakpoints) - 0.1px;
@@ -145,7 +146,7 @@ $_breakpoints: (
 
   @if $media-type == 'all' and $media-query != '' {
     $media-type: '';
-    $media-query: str-slice(unquote($media-query), 6); //删除 ' and '
+    $media-query: string.slice(unquote($media-query), 6); //删除 ' and '
   }
 
   @media #{$media-type + $media-query} {

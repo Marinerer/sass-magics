@@ -1,4 +1,4 @@
-@use 'sass:string';
+@use "sass:string";
 
 /// 字符串 模块扩展
 /// @function str-replace($source, $search, $replace)
@@ -11,14 +11,11 @@
 /// @return {string} 替换后的字符串
 ///-----------------------------------------------------
 @function str-replace($source, $search, $replace: "") {
-  $index: str-index($source, $search);
+  $index: string.index($source, $search);
   @if $index {
-    @return str-slice($source, 1, $index - 1) + $replace +
-      str-replace(
-        str-slice($source, $index + str-length($search)),
-        $search,
-        $replace
-      );
+    $slice1: string.slice($source, 1, $index - 1);
+    $slice2: str-replace(string.slice($source, $index + string.length($search)), $search, $replace);
+    @return $slice1 + $replace + $slice2;
   }
   @return $source;
 }
