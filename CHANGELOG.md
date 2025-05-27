@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Marinerer/sass-magics/compare/v1.1.0...v1.1.1) (2025-05-27)
+
+
+### 🌟 Performance
+
+* **mixin:** Upgrade SASS legacy API ([d41b040](https://github.com/Marinerer/sass-magics/commit/d41b04076ec7d25f86cc33b1dca5965819c45335))
+
 ## [1.1.0](https://github.com/Marinerer/sass-magics/compare/v1.0.3...v1.1.0) (2025-05-26)
 
 
