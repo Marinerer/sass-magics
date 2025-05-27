@@ -1,3 +1,5 @@
+@use 'sass:map';
+
 /// 切换主题
 /// @mixin useTheme
 /// @example scss
@@ -20,8 +22,12 @@ $_themes: (
   )
 ) !default;
 
-/// 定义全局theme变量, 用于useTheme中收集依赖
-$_currentTheme: light;
+// 可配置的默认主题名称
+$_default-theme-name: light !default;
+
+/// 定义全局theme变量, 用于在useTheme中收集依赖
+//初始化为null，表示它还没有被useTheme循环设置
+$_currentTheme: null;
 
 @mixin useTheme() {
   @each $key, $value in $_themes {
@@ -31,11 +37,51 @@ $_currentTheme: light;
     }
   }
 }
+@mixin useTheme() {
+  $prev-theme-for-call: $_currentTheme; // Save outer context
+  @each $key, $value in $_themes {
+    $_currentTheme: $key !global; // 指向全局_currentTheme, 否则为局部变量
+    html[data-theme="#{$key}"] & {
+      @content; // useThemeVar会看到迭代后的$_currentTheme
+    }
+  }
+  $_currentTheme: $prev-theme-for-call !global; // Restore outer context
+}
 
 /// 获取当前主题变量
 /// @param {string} $name 变量名
-/// @return {string} 变量值
-@function useThemeVar($name) {
-  $themeMap: map-get($_themes, $_currentTheme); // 获取遍历的当前主题
-  @return map-get($themeMap, $name);
+/// @param {any} $default-value [null] - 值不存在时的默认返回值
+/// @param {string} $name 变量名
+/// @param {any} $default-value [null] - 值不存在时的默认返回值
+/// @param {string | null} $theme-name [null] - 指定主题名称，为null则使用当前主题或默认主题
+/// @return {any} 变量值
+@function useThemeVar($name, $default-value: null, $theme-name: null) {
+  $theme-to-fetch: null; // 存储要查找的主题名
+
+  // 确定要查找的主题名
+  // 1.优先使用传入的 $theme-name，2.其次使用 $_currentTheme，3.最后回退到默认主题 $_default-theme-name。
+  @if $theme-name != null {
+    $theme-to-fetch: $theme-name;
+  } @else if $_currentTheme != null and map.has-key($_themes, $_currentTheme) {
+    // If $_currentTheme is set by useTheme() loop and is a valid key
+    $theme-to-fetch: $_currentTheme;
+  } @else {
+    // Fallback to the module's configured default theme name
+    $theme-to-fetch: $_default-theme-name;
+  }
+
+  // 检查主题是否存在
+  // 如果主题不存在于 $_themes 中，发出警告并返回 $default-value
+  @if not map.has-key($_themes, $theme-to-fetch) {
+    @warn "Theme '#{$theme-to-fetch}' not found. Available themes: #{map.keys($_themes)}.";
+    @return $default-value;
+  }
+
+  // 遍历获取当前主题
+  // 从对应主题的 map 中查找 $name 对应的值,若找到则返回变量值，否则返回默认值。
+  $theme-map: map.get($_themes, $theme-to-fetch);
+  @if not map.has-key($theme-map, $name) {
+    @return $default-value;
+  }
+  @return map.get($theme-map, $name);
 }

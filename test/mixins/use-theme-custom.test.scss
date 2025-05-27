@@ -1,0 +1,120 @@
+@use 'true' as *;
+
+// --- Testing with Custom Themes ---
+@use '../../mixins/use-theme' as ut-custom with (
+  $_themes: (
+    ocean: (
+      text-color: #0077cc, 
+      background-color: #e0f7fa, 
+      link-color: #005fa3,
+      font-stack: ("Helvetica Neue", "Helvetica", "Arial", sans-serif)
+    ),
+    forest: (
+      text-color: #2e7d32, 
+      background-color: #e8f5e9, 
+      link-color: #1b5e20,
+      font-stack: ("Georgia", "serif")
+    ),
+    // Custom 'light' theme to test overriding default theme names
+    light: (
+        text-color: #dd0000, 
+        background-color: #ffeeee
+        // This custom 'light' theme does not have 'link-color' or 'font-stack'
+    )
+  ),
+  $_default-theme-name: 'ocean' // Set 'ocean' as the default theme for this module instance
+);
+
+@include describe('mixin: useTheme (custom themes: ocean, forest, custom light)') {
+  @include it('should output styles for custom ocean, forest, and light themes') {
+    @include assert('checks custom theme outputs') {
+      @include output(false) {
+        .custom-widget {
+          @include ut-custom.useTheme {
+            color: ut-custom.useThemeVar('text-color');
+            background: ut-custom.useThemeVar('background-color');
+            text-decoration-color: ut-custom.useThemeVar('link-color'); // Will be null for 'light'
+            border-top-color: ut-custom.useThemeVar('secondary-border', hotpink); // Fallback
+            font-family: ut-custom.useThemeVar('font-stack'); // Will be null for 'light'
+          }
+        }
+      }
+      @include expect(false) {
+        html[data-theme=ocean] .custom-widget {
+          color: #0077cc;
+          background: #e0f7fa;
+          text-decoration-color: #005fa3;
+          border-top-color: hotpink; 
+          font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+        }
+        html[data-theme=forest] .custom-widget {
+          color: #2e7d32;
+          background: #e8f5e9;
+          text-decoration-color: #1b5e20;
+          border-top-color: hotpink;
+          font-family: "Georgia", "serif";
+        }
+        html[data-theme=light] .custom-widget {
+            color: #dd0000; 
+            background: #ffeeee; 
+            border-top-color: hotpink;
+        }
+      }
+    }
+  }
+
+  @include it('useThemeVar should use the custom default theme (ocean) if specified') {
+    @include assert('useThemeVar outside useTheme respects custom default theme "ocean"') {
+      @include output {
+        .standalone-custom-default {
+          color: ut-custom.useThemeVar('text-color'); 
+          background-color: ut-custom.useThemeVar('background-color');
+          font-family: ut-custom.useThemeVar('font-stack');
+          border-color: ut-custom.useThemeVar('a-var-not-in-ocean', gold);
+        }
+      }
+      @include expect {
+        .standalone-custom-default {
+          color: #0077cc; 
+          background-color: #e0f7fa; 
+          font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+          border-color: gold;
+        }
+      }
+    }
+  }
+
+  @include it('useThemeVar with explicit custom theme name outside useTheme block') {
+    @include assert('useThemeVar with custom theme name resolves correctly') {
+      @include output {
+        .explicit-custom-theme-var {
+          color: ut-custom.useThemeVar('text-color', $theme-name: 'forest');
+          border-bottom-color: ut-custom.useThemeVar('unique-ocean-var', $default-value: navy, $theme-name: 'forest');
+          text-decoration-line-color: ut-custom.useThemeVar('link-color', $default-value: lime, $theme-name: 'light');
+        }
+      }
+      @include expect {
+        .explicit-custom-theme-var {
+          color: #2e7d32; 
+          border-bottom-color: navy; 
+          text-decoration-line-color: lime;
+        }
+      }
+    }
+  }
+
+   @include it('useThemeVar for a variable only in one custom theme (link-color from ocean)') {
+    @include assert('useThemeVar for link-color from ocean theme (default for ut-custom)') {
+      @include output {
+        .special-link {
+          text-decoration-color: ut-custom.useThemeVar('link-color');
+        }
+      }
+      @include expect {
+        .special-link {
+          text-decoration-color: #005fa3; 
+        }
+      }
+    }
+  }
+}
