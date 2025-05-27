@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.2](https://github.com/Marinerer/sass-magics/compare/v1.1.1...v1.1.2) (2025-05-27)
+
+
+### 🌟 Performance
+
+* **selector:** Optimize unified-parent mixins and add test cases ([47d08df](https://github.com/Marinerer/sass-magics/commit/47d08df051007bfaaa7d67e5c554406b775f4c8b))
+* **useTheme:** Optimize define theme functionality and add test cases ([5162b8a](https://github.com/Marinerer/sass-magics/commit/5162b8ac1d1cc139b11f56d8184c13b725047d38))
+
+
+### ♻️ Code Refactoring
+
+* **mq:** Refactoring media-query module to enhance functionality ([612335d](https://github.com/Marinerer/sass-magics/commit/612335da0ada33ee76fdbd52f6d94c4dfa9b5497))
+* **triangle:** Change direction and style of the triangle ([d89237a](https://github.com/Marinerer/sass-magics/commit/d89237a06112d562c14bc5bc5f20a4ea92fe6a31))
+
 ## [1.1.1](https://github.com/Marinerer/sass-magics/compare/v1.1.0...v1.1.1) (2025-05-27)
 
 
