@@ -2,6 +2,7 @@
 @use 'sass:map';
 @use 'sass:list';
 @use "sass:meta";
+@use 'sass:string';
 
 @use '../core/map' as *;
 
@@ -12,6 +13,8 @@
 ///-----------------------------------------------------
 
 /// 断点映射
+/// Default breakpoint map.
+/// Can be overridden using `change-breakpoints`.
 /// @access private
 $_breakpoints: (
   'mobile': 320px,
@@ -34,7 +37,7 @@ $_breakpoints: (
 
   @each $key, $point in $points {
     $value: if($lastValue, ($point, $lastValue), $point);
-    $results: map-merge($results, ($key: $value));
+    $results: map.merge($results, ($key: $value));
     $lastValue: $point;
   }
 
@@ -52,7 +55,7 @@ $_breakpoints: (
 @mixin change-breakpoints($key, $point: null, $breakpoints: $_breakpoints) {
   @if $key {
     @if $point {
-      $_breakpoints: map-merge($breakpoints, ($key: $point)) !global;
+      $_breakpoints: map.merge($breakpoints, ($key: $point)) !global;
     } @else {
       $_breakpoints: map-remove($breakpoints, $key) !global;
     }
@@ -68,8 +71,8 @@ $_breakpoints: (
 /// @param {string} $key 断点名
 /// @param {map} $breakpoints 断点映射
 @function _get-breakpoint($key, $breakpoints: $_breakpoints) {
-  @if map-has-key($breakpoints, $key) {
-    @return map-get($breakpoints, $key);
+  @if map.has-key($breakpoints, $key) {
+    @return map.get($breakpoints, $key);
   } @else {
     @warn "[_get-breakpoint]: #{$key} wasn't found in $breakpoints.";
     @return null;
@@ -83,7 +86,7 @@ $_breakpoints: (
 /// @include respond-to('mobile') { font-size: 14px; };
 /// -----------------------------------------------------
 @mixin respond-to($key, $breakpoints: _breakpoints-segment($_breakpoints)) {
-  $point: map-get($map: $breakpoints, $key: $key);
+  $point: map.get($map: $breakpoints, $key: $key);
   @if meta.type-of($point) == 'list' {
     $min: list.nth($list: $point, $n: 1);
     $max: list.nth($list: $point, $n: 2);

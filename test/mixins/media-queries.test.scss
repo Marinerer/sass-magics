@@ -1,0 +1,64 @@
+@use 'true' as *;
+@use '../../mixins/media-queries' as *;
+
+@include describe('mixin: media-queries') {
+  @include it('respond-to(mobile)') {
+    @include assert('mobile') {
+      @include output {
+        @include respond-to('mobile') { font-size: 14px; };
+      }
+      @include expect {
+        @media (min-width: 320px) and (max-width: 480px) {
+          & {
+            font-size: 14px;
+          }
+        }
+      }
+    }
+  }
+
+  @include it('respond-to(desktop)') {
+    @include assert('desktop') {
+      @include output {
+        @include respond-to('desktop') { font-size: 24px; };
+      }
+      @include expect {
+        @media (min-width: 1280px) and (max-width: 1680px) {
+          & {
+            font-size: 24px;
+          }
+        }
+      }
+    }
+  }
+
+  @include it('mq') {
+    @include assert('default parameters') {
+      @include output {
+        @include mq { font-size: 20px; };
+      }
+      @include expect {
+        @media all {
+          & {
+            font-size: 20px;
+          }
+        }
+      }
+    }
+  }
+
+  @include it('mq($min: 768px, $media-type: screen)') {
+    @include assert('custom parameters') {
+      @include output {
+        @include mq($min: 768px, $orientation: landscape, $media-type: 'screen') { font-size: 16px; };
+      }
+      @include expect {
+        @media screen and (min-width: 768px) and (orientation: landscape) {
+          & {
+            font-size: 16px;
+          }
+        }
+      }
+    }
+  }
+}

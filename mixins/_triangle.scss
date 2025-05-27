@@ -1,4 +1,5 @@
 @use 'sass:math';
+@use 'sass:list';
 @use '../functions/validator' as *;
 
 /// 生成一个指定方向的三角形
@@ -10,8 +11,8 @@
 /// @include triangle(up, blue, 10px, 10px);
 /// -----------------------------------------------------
 @mixin triangle(
-  $direction,
-  $color,
+  $direction: down,
+  $color: #333,
   $width: 1em,
   $height: 1em
 ) {

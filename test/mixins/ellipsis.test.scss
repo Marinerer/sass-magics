@@ -1,5 +1,5 @@
 @use 'true' as *;
-@use '../mixins/ellipsis' as *;
+@use '../../mixins/ellipsis' as *;
 
 @include describe('mixin: ellipsis') {
   @include it('ellipsis single line') {
@@ -18,7 +18,7 @@
     }
   }
 
-  @include test('multiple line') {
+  @include it('multiple line') {
     @include assert {
       @include output {
         @include ellipsis(3);

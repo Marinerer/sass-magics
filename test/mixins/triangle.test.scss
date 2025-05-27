@@ -1,0 +1,52 @@
+@use 'true' as *;
+@use '../../mixins/triangle' as *;
+
+@include describe('mixin: triangle') {
+  @include it('should generate a triangle with default parameters') {
+    @include assert('default triangle') {
+      @include output {
+        @include triangle();
+      }
+      @include expect {
+        border-style: solid;
+        height: 0;
+        width: 0;
+        font-size: 0;
+        border-color: #333 transparent transparent;
+        border-width: 1em 0.5em 0;
+      }
+    }
+  }
+
+  @include it('should generate a triangle with default size and custom color') {
+    @include assert('custom triangle') {
+      @include output {
+        @include triangle(up, red);
+      }
+      @include expect {
+        border-style: solid;
+        height: 0;
+        width: 0;
+        font-size: 0;
+        border-color: transparent transparent red;
+        border-width: 0 0.5em 1em;
+      }
+    }
+  }
+
+  @include it('should generate a triangle pointing in different directions') {
+    @include assert('triangle pointing right') {
+      @include output {
+        @include triangle(down-left, blue, 15px);
+      }
+      @include expect {
+        border-style: solid;
+        height: 0;
+        width: 0;
+        font-size: 0;
+        border-color: transparent transparent transparent blue;
+        border-width: 15px 0 0 15px;
+      }
+    }
+  }
+}

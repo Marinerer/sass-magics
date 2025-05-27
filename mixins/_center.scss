@@ -15,9 +15,9 @@
 }
 
 /// 定位水平垂直居中
-/// @param {number} $width 元素宽度, auto
+/// @param {number} $width 元素宽度
 /// -----------------------------------------------------
-@mixin position-center($width: auto) {
+@mixin position-center($width: false) {
   @if $width {
     width: $width;
   }
