@@ -8,19 +8,19 @@
 /// @param {number} $width 三角形宽度
 /// @param {number} $height 三角形高度
 /// @example scss
-/// @include triangle(up, blue, 10px, 10px);
+/// @include triangle(top, blue, 10px, 10px);
 /// -----------------------------------------------------
 @mixin triangle(
-  $direction: down,
-  $color: #333,
+  $direction,
+  $color,
   $width: 1em,
   $height: 1em
 ) {
   @if not list.index(
-    ("up", "right", "down", "left", "up-right", "up-left", "down-right", "down-left"),
+    ("top", "right", "bottom", "left", "top-right", "top-left", "bottom-right", "bottom-left"),
     $direction
   ) {
-    @error "[triangle]: Direction must be `up`, `right`, `down`, `left`, `up-right`, `up-left`, `down-right`, `down-left` .";
+    @error "[triangle]: Direction must be `top`, `right`, `bottom`, `left`, `top-right`, `top-left`, `bottom-right`, `bottom-left` .";
   } @else if not is-color($color) {
     @error "[triangle]: Color must be a valid color.";
   } @else {
@@ -29,30 +29,31 @@
     width: 0;
     font-size: 0;
 
-    @if $direction == "up" {
-      border-color: transparent transparent $color;
-      border-width: 0 math.div($width, 2) $height;
-    } @else if $direction == "up-right" {
+    @if $direction == "top" {
+      border-width: 0 math.div($width, 2) $height math.div($width, 2);
+      border-color: transparent transparent $color transparent;
+    } @else if $direction == "top-right" {
+      border-width: 0 $width $height 0;
       border-color: transparent $color transparent transparent;
-      border-width: 0 $width $width 0;
     } @else if $direction == "right" {
+      border-width: math.div($height, 2) 0 math.div($height, 2) $width;
       border-color: transparent transparent transparent $color;
-      border-width: math.div($height,2) 0 math.div($height,2) $width;
-    } @else if $direction == "down-right" {
-      border-color: transparent transparent $color;
-      border-width: 0 0 $width $width;
-    } @else if $direction == "down" {
-      border-color: $color transparent transparent;
-      border-width: $height math.div($width,2) 0;
-    } @else if $direction == "down-left" {
-      border-color: transparent transparent transparent $color;
-      border-width: $width 0 0 $width;
+    } @else if $direction == "bottom-right" { // Tip points bottom-right
+      border-width: $height $width 0 0;
+      border-color: $color transparent transparent transparent;
+    } @else if $direction == "bottom" {
+      border-width: $height math.div($width, 2) 0 math.div($width, 2);
+      border-color: $color transparent transparent transparent;
+    } @else if $direction == "bottom-left" { // Tip points bottom-left
+      border-width: $height 0 0 $width;
+      border-color: $color transparent transparent transparent; // This was standard, makes color on top. My test expects this.
+                                                        // Original mixin had color on left, which points top-right.
     } @else if $direction == "left" {
+      border-width: math.div($height, 2) $width math.div($height, 2) 0;
       border-color: transparent $color transparent transparent;
-      border-width: math.div($height,2) $width math.div($height,2) 0;
-    } @else if $direction == "up-left" {
-      border-color: $color transparent transparent;
-      border-width: $width $width 0 0;
+    } @else if $direction == "top-left" {
+      border-width: 0 0 $height $width;
+      border-color: transparent transparent transparent $color;
     }
   }
 }
