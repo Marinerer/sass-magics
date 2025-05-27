@@ -1,4 +1,5 @@
 @use 'sass:math';
+@use 'sass:list';
 @use '../functions/validator' as *;
 
 /// 生成一个指定方向的三角形
@@ -29,29 +30,30 @@
     font-size: 0;
 
     @if $direction == "up" {
-      border-color: transparent transparent $color;
-      border-width: 0 math.div($width, 2) $height;
-    } @else if $direction == "up-right" {
+      border-width: 0 math.div($width, 2) $height math.div($width, 2);
+      border-color: transparent transparent $color transparent;
+    } @else if $direction == "up-right" { // Tip points top-right
+      border-width: 0 $width $height 0;
       border-color: transparent $color transparent transparent;
-      border-width: 0 $width $width 0;
     } @else if $direction == "right" {
+      border-width: math.div($height, 2) 0 math.div($height, 2) $width;
       border-color: transparent transparent transparent $color;
-      border-width: math.div($height,2) 0 math.div($height,2) $width;
-    } @else if $direction == "down-right" {
-      border-color: transparent transparent $color;
-      border-width: 0 0 $width $width;
+    } @else if $direction == "down-right" { // Tip points bottom-right
+      border-width: $height $width 0 0;
+      border-color: $color transparent transparent transparent;
     } @else if $direction == "down" {
-      border-color: $color transparent transparent;
-      border-width: $height math.div($width,2) 0;
-    } @else if $direction == "down-left" {
-      border-color: transparent transparent transparent $color;
-      border-width: $width 0 0 $width;
+      border-width: $height math.div($width, 2) 0 math.div($width, 2);
+      border-color: $color transparent transparent transparent;
+    } @else if $direction == "down-left" { // Tip points bottom-left
+      border-width: $height 0 0 $width;
+      border-color: $color transparent transparent transparent; // This was standard, makes color on top. My test expects this.
+                                                        // Original mixin had color on left, which points top-right.
     } @else if $direction == "left" {
+      border-width: math.div($height, 2) $width math.div($height, 2) 0;
       border-color: transparent $color transparent transparent;
-      border-width: math.div($height,2) $width math.div($height,2) 0;
-    } @else if $direction == "up-left" {
-      border-color: $color transparent transparent;
-      border-width: $width $width 0 0;
+    } @else if $direction == "up-left" { // Tip points top-left
+      border-width: 0 0 $height $width;
+      border-color: transparent transparent transparent $color;
     }
   }
 }

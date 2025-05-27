@@ -1,0 +1,284 @@
+@use 'true' as *;
+@use '../mixins/triangle' as t;
+@use 'sass:math'; // For math.div in expectations
+
+// Test constants
+$test-color: blue;
+$mixin-default-size: 1em; // This is the default $width and $height in the mixin
+$custom-width: 8px;
+$custom-height: 12px;
+
+@include describe('mixin: triangle') {
+
+  // --- UP ---
+  @include describe('direction: up') {
+    @include it('default size (1em)') {
+      @include assert('should create an upward triangle with default 1em size') {
+        @include output {
+          @include t.triangle('up', $test-color);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: 0 math.div($mixin-default-size, 2) $mixin-default-size math.div($mixin-default-size, 2);
+          border-color: transparent transparent $test-color transparent;
+        }
+      }
+    }
+    @include it('custom width/height') {
+      @include assert('should create an upward triangle with custom sizes') {
+        @include output {
+          @include t.triangle('up', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: 0 math.div($custom-width, 2) $custom-height math.div($custom-width, 2);
+          border-color: transparent transparent $test-color transparent;
+        }
+      }
+    }
+  }
+
+  // --- RIGHT ---
+  @include describe('direction: right') {
+    @include it('default size (1em)') {
+      @include assert('should create a rightward triangle with default 1em size') {
+        @include output {
+          @include t.triangle('right', $test-color);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: math.div($mixin-default-size, 2) 0 math.div($mixin-default-size, 2) $mixin-default-size;
+          border-color: transparent transparent transparent $test-color;
+        }
+      }
+    }
+    @include it('custom width/height') {
+      @include assert('should create a rightward triangle with custom sizes') {
+        @include output {
+          @include t.triangle('right', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: math.div($custom-height, 2) 0 math.div($custom-height, 2) $custom-width;
+          border-color: transparent transparent transparent $test-color;
+        }
+      }
+    }
+  }
+
+  // --- DOWN ---
+  @include describe('direction: down') {
+    @include it('default size (1em)') {
+      @include assert('should create a downward triangle with default 1em size') {
+        @include output {
+          @include t.triangle('down', $test-color);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: $mixin-default-size math.div($mixin-default-size, 2) 0 math.div($mixin-default-size, 2);
+          border-color: $test-color transparent transparent transparent;
+        }
+      }
+    }
+    @include it('custom width/height') {
+      @include assert('should create a downward triangle with custom sizes') {
+        @include output {
+          @include t.triangle('down', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: $custom-height math.div($custom-width, 2) 0 math.div($custom-width, 2);
+          border-color: $test-color transparent transparent transparent;
+        }
+      }
+    }
+  }
+
+  // --- LEFT ---
+  @include describe('direction: left') {
+    @include it('default size (1em)') {
+      @include assert('should create a leftward triangle with default 1em size') {
+        @include output {
+          @include t.triangle('left', $test-color);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: math.div($mixin-default-size, 2) $mixin-default-size math.div($mixin-default-size, 2) 0;
+          border-color: transparent $test-color transparent transparent;
+        }
+      }
+    }
+    @include it('custom width/height') {
+      @include assert('should create a leftward triangle with custom sizes') {
+        @include output {
+          @include t.triangle('left', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: math.div($custom-height, 2) $custom-width math.div($custom-height, 2) 0;
+          border-color: transparent $test-color transparent transparent;
+        }
+      }
+    }
+  }
+
+  // --- UP-RIGHT ---
+  @include describe('direction: up-right (tip points top-right)') {
+    @include it('default size (1em)') {
+      @include assert('should create an up-right triangle with default 1em size') {
+        @include output {
+          @include t.triangle('up-right', $test-color); 
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: 0 $mixin-default-size $mixin-default-size 0; 
+          border-color: transparent $test-color transparent transparent;
+        }
+      }
+    }
+    @include it('custom width and height') {
+      @include assert('should create an up-right triangle with custom width and height') {
+        @include output {
+          @include t.triangle('up-right', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: 0 $custom-width $custom-height 0; 
+          border-color: transparent $test-color transparent transparent;
+        }
+      }
+    }
+  }
+
+  // --- UP-LEFT ---
+  @include describe('direction: up-left (tip points top-left)') {
+    @include it('default size (1em)') {
+      @include assert('should create an up-left triangle with default 1em size') {
+        @include output {
+          @include t.triangle('up-left', $test-color); 
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: 0 0 $mixin-default-size $mixin-default-size; 
+          border-color: transparent transparent transparent $test-color;
+        }
+      }
+    }
+    @include it('custom width and height') {
+      @include assert('should create an up-left triangle with custom width and height') {
+        @include output {
+          @include t.triangle('up-left', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: 0 0 $custom-height $custom-width; 
+          border-color: transparent transparent transparent $test-color;
+        }
+      }
+    }
+  }
+
+  // --- DOWN-RIGHT ---
+  @include describe('direction: down-right (tip points bottom-right)') {
+    @include it('default size (1em)') {
+      @include assert('should create a down-right triangle with default 1em size') {
+        @include output {
+          @include t.triangle('down-right', $test-color); 
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: $mixin-default-size $mixin-default-size 0 0; 
+          border-color: $test-color transparent transparent transparent;
+        }
+      }
+    }
+    @include it('custom width and height') {
+      @include assert('should create a down-right triangle with custom width and height') {
+        @include output {
+          @include t.triangle('down-right', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: $custom-height $custom-width 0 0; 
+          border-color: $test-color transparent transparent transparent;
+        }
+      }
+    }
+  }
+
+  // --- DOWN-LEFT ---
+  @include describe('direction: down-left (tip points bottom-left)') {
+    @include it('default size (1em)') {
+      @include assert('should create a down-left triangle with default 1em size') {
+        @include output {
+          @include t.triangle('down-left', $test-color); 
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: $mixin-default-size 0 0 $mixin-default-size; 
+          border-color: $test-color transparent transparent transparent;
+        }
+      }
+    }
+    @include it('custom width and height') {
+      @include assert('should create a down-left triangle with custom width and height') {
+        @include output {
+          @include t.triangle('down-left', $test-color, $custom-width, $custom-height);
+        }
+        @include expect {
+          border-style: solid;
+          height: 0;
+          width: 0;
+          font-size: 0;
+          border-width: $custom-height 0 0 $custom-width; 
+          border-color: $test-color transparent transparent transparent;
+        }
+      }
+    }
+  }
+}

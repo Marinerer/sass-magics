@@ -29,7 +29,18 @@
 /// @param {string} $child 子选择器
 ///-----------------------------------------------------
 @mixin unify-parent($child) {
-  @at-root #{selector.unify(&, $child)} {
-    @content;
+  @if string.slice($child, 1, 1) == "&" {
+    // If $child starts with '&', it's already referencing the parent.
+    // So, just use $child at the root, it will correctly resolve.
+    // e.g., in .parent, unify-parent('&--modifier') -> &--modifier -> .parent--modifier
+    @at-root #{$child} {
+      @content;
+    }
+  } @else {
+    // Otherwise, unify the current parent & with the $child selector.
+    // e.g., in .parent, unify-parent('.child') -> selector.unify(.parent, .child) -> .parent.child
+    @at-root #{selector.unify(&, $child)} {
+      @content;
+    }
   }
 }

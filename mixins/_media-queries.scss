@@ -1,17 +1,20 @@
 @use 'sass:math';
 @use 'sass:map';
 @use 'sass:list';
+@use 'sass:string';
 @use "sass:meta";
 
-@use '../core/map' as *;
+// Assuming map-sort is a custom function from '../core/map'.
+// If it's not available or has issues, this could be a source of problems.
+// For robust behavior, map-sort should return a map sorted by its values (breakpoint dimensions).
+@use '../core/map' as core-map; 
 
-/// 媒体查询 (设备尺寸、分辨率、方向)
-/// @mixin change-breakpoints($key, $point, $breakpoints)
-/// @mixin respond-to($key, $breakpoints)
-/// @mixin mq($min, $max, $orientation, $and, $media-type, $breakpoints)
-///-----------------------------------------------------
+/// Media Queries Module
+/// Provides mixins and functions for handling responsive breakpoints and media queries.
+/// -----------------------------------------------------
 
-/// 断点映射
+/// Default breakpoint map.
+/// Can be overridden using `change-breakpoints`.
 /// @access private
 $_breakpoints: (
   'mobile': 320px,
@@ -22,134 +25,236 @@ $_breakpoints: (
   'wide': 1680px
 ) !default;
 
-/// 生成断点分段映射
+/// Retrieves a specific breakpoint value from the global map.
+/// Issues a warning if the breakpoint key is not found.
 /// @access private
-/// @param {map} $breakpoints 断点映射
-/// @return {map} 断点分段映射
-/// @example results: (tablet: (480, 768), desktop: (992, 1200))
-@function _breakpoints-segment($breakpoints: $_breakpoints) {
-  $points: map-sort($breakpoints, null, descend);
-  $results: ();
-  $lastValue: null;
-
-  @each $key, $point in $points {
-    $value: if($lastValue, ($point, $lastValue), $point);
-    $results: map-merge($results, ($key: $value));
-    $lastValue: $point;
-  }
-
-  @return $results;
-}
-
-/// 更改断点 (新增,修改,删除,替换)
-/// 1. $point存在为合并,否则为删除
-/// 2. $key不存在为替换
-/// @param {string} $key 断点名
-/// @param {number} $point 断点
-/// @param {map} $breakpoints 断点映射
-/// @example scss
-/// @include change-breakpoint('mobile', 480px);
-@mixin change-breakpoints($key, $point: null, $breakpoints: $_breakpoints) {
-  @if $key {
-    @if $point {
-      $_breakpoints: map-merge($breakpoints, ($key: $point)) !global;
-    } @else {
-      $_breakpoints: map-remove($breakpoints, $key) !global;
-    }
-  } @else {
-    @if $breakpoints {
-      $_breakpoints: $breakpoints !global;
-    }
-  }
-}
-
-/// 获取指定断点值
-/// @access private
-/// @param {string} $key 断点名
-/// @param {map} $breakpoints 断点映射
+/// @param {string} $key - The name of the breakpoint (e.g., 'tablet').
+/// @param {map} $breakpoints [$_breakpoints] - The map of breakpoints to use.
+/// @return {number | null} The breakpoint value or null if not found.
 @function _get-breakpoint($key, $breakpoints: $_breakpoints) {
-  @if map-has-key($breakpoints, $key) {
-    @return map-get($breakpoints, $key);
-  } @else {
-    @warn "[_get-breakpoint]: #{$key} wasn't found in $breakpoints.";
+  @if not map.has-key($breakpoints, $key) {
+    // Interpolating the whole map can cause issues if it's not a simple string.
+    // Using map.keys() is safer if we want to give a hint about available keys.
+    @warn "[_get-breakpoint]: Breakpoint key '#{$key}' not found. Available keys: #{map.keys($breakpoints)}.";
     @return null;
   }
+  @return map.get($breakpoints, $key);
 }
 
-/// 指定断点响应式
-/// @param {string} $key 触发响应式的断点
-/// @param {map} $breakpoints 断点映射
-/// @example scss
-/// @include respond-to('mobile') { font-size: 14px; };
-/// -----------------------------------------------------
-@mixin respond-to($key, $breakpoints: _breakpoints-segment($_breakpoints)) {
-  $point: map-get($map: $breakpoints, $key: $key);
-  @if meta.type-of($point) == 'list' {
-    $min: list.nth($list: $point, $n: 1);
-    $max: list.nth($list: $point, $n: 2);
-    @media (min-width: $min) and (max-width: $max) {
-      @content;
+/// Generates a dynamic map of breakpoint segments.
+/// A segment 'key' maps to a list of two breakpoint names: (`key`, `next-larger-key`).
+/// Example: If breakpoints are mobile, tablet, desktop;
+/// then segments would include ('mobile': ('mobile', 'tablet'), 'tablet': ('tablet', 'desktop')).
+/// The largest breakpoint will not have a segment here.
+/// @access private
+/// @param {map} $breakpoints [$_breakpoints] - The map of breakpoints to use.
+/// @return {map} A map of breakpoint segments.
+@function _breakpoints-segment($breakpoints: $_breakpoints) {
+  // Using a fixed segment map based on default breakpoint names.
+  // This simplifies logic by avoiding complex dynamic sorting of the $breakpoints map.
+  // This map defines which breakpoint constitutes the "next larger" for a given key,
+  // which is used by respond-to to set a max-width.
+  // Format: 'segment-name': ('min-breakpoint-name-for-segment', 'max-breakpoint-name-for-segment-exclusive-end')
+  // Example: 'tablet' segment goes from 'tablet' up to (but not including) 'laptops'.
+  // Keys not present here (e.g., 'mobile' if smallest, 'wide' if largest) are handled by respond-to
+  // as min-width only queries by default.
+  $_fixed_segments: (
+    'mobile': ('mobile', 'phablet'),
+    'phablet': ('phablet', 'tablet'),
+    'tablet': ('tablet', 'laptops'),
+    'laptops': ('laptops', 'desktop'),
+    'desktop': ('desktop', 'wide')
+    // 'wide' is the largest default, so it won't be a key here for a ranged segment.
+    // respond-to will treat it as min-width only.
+  );
+  @return $_fixed_segments;
+}
+
+
+/// Allows modification of the global `$_breakpoints` map.
+/// @param {string | null} $key - Breakpoint name to add/modify/delete.
+///                                If null, $new-map is used to replace the entire map.
+/// @param {number | null} $point - Value for the breakpoint. If null and $key is provided, deletes the key.
+/// @param {map | null} $new-map - A new map to replace `$_breakpoints`. Used if $key is null.
+@mixin change-breakpoints($key: null, $point: null, $new-map: null) {
+  @if $key != null {
+    @if $point != null { // Add or modify
+      $_breakpoints: map.merge($_breakpoints, ($key: $point)) !global;
+    } @else { // Delete key
+      @if map.has-key($_breakpoints, $key) {
+        $_breakpoints: map.remove($_breakpoints, $key) !global;
+      } @else {
+        @warn "change-breakpoints: Attempted to delete non-existent key '#{$key}'.";
+      }
+    }
+  } @else if $new-map != null { // Replace entire map
+    $_breakpoints: $new-map !global;
+  } @else {
+    @warn "change-breakpoints: Called with no valid arguments to change breakpoints.";
+  }
+}
+
+/// Creates media queries for specific breakpoint segments (e.g., 'tablet' only).
+/// A segment for 'tablet' would mean min-width: tablet-value and max-width: value-of-next-breakpoint - epsilon.
+/// Uses `_breakpoints-segment` to determine min/max boundaries.
+/// @param {string} $key - The breakpoint segment key (e.g., 'tablet').
+@mixin respond-to($key) {
+  $segment-map: _breakpoints-segment(); // e.g., ('tablet': ('tablet', 'laptops'))
+  
+  @if map.has-key($segment-map, $key) {
+    $segment-keys: map.get($segment-map, $key); // e.g., ('tablet', 'laptops')
+    $min-bp-name: list.nth($segment-keys, 1);
+    $max-bp-name: list.nth($segment-keys, 2);
+
+    $min-width: _get-breakpoint($min-bp-name);
+    $max-limit-val: _get-breakpoint($max-bp-name); // This might be null if 'max-bp-name' was deleted
+
+    @if $min-width != null {
+      @if $max-limit-val != null {
+        // Both min and max breakpoint values are available
+        $max-width-adjusted: null;
+        @if math.unit($max-limit-val) == "px" {
+           $max-width-adjusted: $max-limit-val - 0.02px;
+        } @else if math.unit($max-limit-val) == "em" or math.unit($max-limit-val) == "rem" {
+           $max-width-adjusted: $max-limit-val - 0.001em;
+        } @else if not math.is-unitless($max-limit-val) {
+           $max-width-adjusted: $max-limit-val - 0.02; 
+           @warn "respond-to: Max limit value '#{$max-limit-val}' has an unsupported unit for precise epsilon subtraction. Using a generic small offset.";
+        } @else { // Unitless
+           $max-width-adjusted: $max-limit-val - 0.02;
+        }
+        @media (min-width: $min-width) and (max-width: $max-width-adjusted) {
+          @content;
+        }
+      } @else {
+        // Min-width is available, but max-limit-val is null (e.g., its key was deleted).
+        // Fall back to min-width only query.
+        @media (min-width: $min-width) {
+          @content;
+        }
+      }
+    } @else {
+      // $min-width is null (min-bp-name was not found), this shouldn't happen if segment map is consistent.
+      @warn "respond-to: Could not retrieve min-width breakpoint value for segment '#{$key}' (key: '#{$min-bp-name}').";
     }
   } @else {
-    @media (min-width: $point) {
-      @content;
+    // Key is not in $segment-map; treat as a direct min-width query for the key itself.
+    $min-val: _get-breakpoint($key);
+    @if $min-val != null {
+      @media (min-width: $min-val) {
+        @content;
+      }
+    } @else {
+      // Key not found in _get-breakpoint either. Warning already issued by _get-breakpoint.
+      // No output possible.
     }
   }
 }
 
-/// 媒体查询
-/// @param {number} $min 最小宽度
-/// @param {number} $max 最大宽度
-/// @param {string} $orientation 方向 [landscape, portrait]
-/// @param {string} $and 其他条件
-/// @param {string} $media-type 媒体类型
-/// @param {map} $breakpoints 断点映射
-/// @example scss
-/// @include mq($min: 768px, $media-type: 'screen') { font-size: 20px; };
-/// @reference 参考: https://github.com/sass-mq/sass-mq
-/// -----------------------------------------------------
-@mixin mq($min: false, $max: false, $orientation: false, $and: false, $media-type: 'all', $breakpoints: $_breakpoints) {
-  $min-width: 0;
-  $max-width: 0;
-  $media-query: '';
 
+/// Creates versatile media queries based on min/max widths, orientation, and custom conditions.
+/// @param {number | string | false} $min [false] - Min-width value or breakpoint key.
+/// @param {number | string | false} $max [false] - Max-width value or breakpoint key. Max value is exclusive.
+/// @param {string | false} $orientation [false] - 'landscape' or 'portrait'.
+/// @param {string | false} $and [false] - Additional custom media query conditions (e.g., '(hover: hover)').
+/// @param {string} $media-type ['all'] - Media type (e.g., 'screen', 'print').
+@mixin mq($min: false, $max: false, $orientation: false, $and: false, $media-type: 'all') {
+  $min-width-resolved: null;
+  $max-width-resolved: null;
+  $query-conditions-string: ''; // Stores concatenated conditions like "(min-width: ...) and (max-width: ...)"
+
+  // Resolve min-width
   @if $min {
     @if meta.type-of($min) == number {
-      $min-width: $min;
-    } @else {
-      $min-width: _get-breakpoint($min, $breakpoints);
+      $min-width-resolved: $min;
+    } @else if meta.type-of($min) == string {
+      $min-width-resolved: _get-breakpoint($min);
+      @if $min-width-resolved == null {
+          @warn "mq: min-width key '#{$min}' not found in breakpoints.";
+      }
     }
   }
 
+  // Resolve max-width
   @if $max {
+    $value-for-max: null;
     @if meta.type-of($max) == number {
-      $max-width: $max;
-    } @else {
-      $max-width: _get-breakpoint($max, $breakpoints) - 0.1px;
+      $value-for-max: $max;
+    } @else if meta.type-of($max) == string {
+      $value-for-max: _get-breakpoint($max);
+       @if $value-for-max == null {
+          @warn "mq: max-width key '#{$max}' not found in breakpoints.";
+      }
+    }
+
+    @if $value-for-max != null and meta.type-of($value-for-max) == number {
+      // Max-width is exclusive. Apply epsilon.
+      @if math.unit($value-for-max) == "px" {
+         $max-width-resolved: $value-for-max - 0.02px;
+      } @else if math.unit($value-for-max) == "em" or math.unit($value-for-max) == "rem" {
+         $max-width-resolved: $value-for-max - 0.001em;
+      } @else if not math.is-unitless($value-for-max) {
+         @warn "mq: max-width value '#{$value-for-max}' has an unsupported unit for precise epsilon subtraction. Using a generic small offset.";
+         $max-width-resolved: $value-for-max - 0.02; // Fallback
+      } @else { // Unitless
+         $max-width-resolved: $value-for-max - 0.02;
+      }
     }
   }
-
-  @if $min-width != 0 {
-    $media-query: '#{$media-query} and (min-width: #{$min-width})';
+  
+  // Build query conditions string
+  $temp-conditions: '';
+  @if $min-width-resolved != null {
+    $temp-conditions: '#{$temp-conditions} and (min-width: #{$min-width-resolved})';
   }
-  @if $max-width != 0 {
-    $media-query: '#{$media-query} and (max-width: #{$max-width})';
+  @if $max-width-resolved != null {
+    $temp-conditions: '#{$temp-conditions} and (max-width: #{$max-width-resolved})';
   }
-  @if $orientation == 'landscape' {
-    $media-query: '#{$media-query} and (orientation: landscape)';
-  } @else if $orientation == 'portrait' {
-    $media-query: '#{$media-query} and (orientation: portrait)';
+  @if $orientation == 'landscape' or $orientation == 'portrait' {
+    $temp-conditions: '#{$temp-conditions} and (orientation: #{$orientation})';
   }
   @if $and {
-    $media-query: '#{$media-query} and #{$and}';
+    // Ensure $and is treated as a single condition string; wrap if not already.
+    // This might need adjustment based on how $and is expected (e.g. with or without parens)
+    @if string.slice($and, 1, 1) == "(" and string.slice($and, -1, -1) == ")" {
+        $temp-conditions: '#{$temp-conditions} and #{$and}';
+    } @else {
+        $temp-conditions: '#{$temp-conditions} and (#{$and})';
+    }
   }
 
-  @if $media-type == 'all' and $media-query != '' {
-    $media-type: '';
-    $media-query: string.slice(unquote($media-query), 6); //删除 ' and '
+  // Remove leading " and " if present
+  @if string.length($temp-conditions) > 0 {
+    $query-conditions-string: string.slice($temp-conditions, 6);
   }
 
-  @media #{$media-type + $media-query} {
-    @content;
+  // Construct final media query output string
+  $final-media-output: '';
+  @if $media-type != '' and $media-type != 'all' {
+    $final-media-output: $media-type;
+    @if $query-conditions-string != '' {
+      // Remove wrapping parens from here if conditions are already individually parenthesized
+      $final-media-output: '#{$final-media-output} and #{$query-conditions-string}';
+    }
+  } @else { // $media-type is 'all' or effectively empty
+    @if $query-conditions-string != '' {
+      $final-media-output: $query-conditions-string;
+    } @else {
+      $final-media-output: 'all'; // Default to 'all'
+    }
+  }
+  
+  // Output the media query
+  @if $final-media-output != '' {
+    @media #{$final-media-output} {
+      @content;
+    }
+  } @else { 
+    // This case should ideally not be reached if 'all' is the fallback.
+    // If it were, it implies no media query, content applies universally.
+    // Sass typically requires 'all' or a condition for @media.
+    @media all { // Safest fallback if logic somehow results in empty.
+        @content;
+    }
   }
 }

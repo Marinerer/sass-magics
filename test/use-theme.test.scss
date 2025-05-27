@@ -1,0 +1,98 @@
+@use 'true' as *;
+
+// --- Testing with Default Themes ---
+// The `mixins/_use-theme.scss` module defines `$_default-theme-name: light !default;`
+// and `$_currentTheme: $_default-theme-name;`
+// and `$_themes: (light: (color: #000), dark: (color: #fff)) !default;`
+@use '../mixins/use-theme' as ut; 
+
+@include describe('mixin: useTheme (default themes)') {
+  @include it('should output styles for default light and dark themes') {
+    @include assert('checks default light and dark theme outputs') {
+      @include output {
+        .my-component {
+          @include ut.useTheme {
+            color: ut.useThemeVar('color'); // Exists in default themes
+            background-color: ut.useThemeVar('background-color'); // Does not exist, should be omitted
+            border: 1px solid ut.useThemeVar('border-color', peru); // Uses default 'peru'
+            box-shadow: ut.useThemeVar('shadow-config'); // Does not exist, no default, should be omitted
+          }
+        }
+      }
+      @include expect {
+        html[data-theme=light] .test-output .my-component {
+          color: #000; 
+          border: 1px solid peru; 
+        }
+        html[data-theme=dark] .test-output .my-component {
+          color: #fff; 
+          border: 1px solid peru; 
+        }
+      }
+    }
+  }
+
+  @include it('useThemeVar should return null for non-existent var with no default, omitting property') {
+    @include assert('useThemeVar returns null, property should be omitted') {
+      @include output {
+        .another-component {
+          @include ut.useTheme {
+            // This property should not appear in the output
+            box-shadow: ut.useThemeVar('non-existent-variable');
+            // Test with a property that requires a value
+            color: ut.useThemeVar('non-existent-color-for-sure');
+          }
+        }
+      }
+      @include expect {
+        // Expecting no box-shadow or color property at all for either theme.
+        html[data-theme=light] .test-output .another-component {
+        }
+        html[data-theme=dark] .test-output .another-component {
+        }
+      }
+    }
+  }
+
+  @include it('useThemeVar used outside useTheme should use default theme (light)') {
+    @include assert('useThemeVar outside useTheme uses default theme variable') {
+        @include output {
+            .standalone-default {
+                // $_currentTheme is 'light' by default in the module
+                color: ut.useThemeVar('color'); 
+                background-color: ut.useThemeVar('background-color'); // Not in 'light', should be omitted
+                border-top-color: ut.useThemeVar('border-color', hotpink); // Not in 'light', uses hotpink
+            }
+        }
+        @include expect {
+            .standalone-default {
+                color: #000; // Default light theme's color
+                border-top-color: hotpink;
+                // background-color is omitted
+            }
+        }
+    }
+  }
+
+   @include it('useThemeVar with explicit theme name outside useTheme block') {
+    @include assert('useThemeVar with theme name resolves correctly') {
+      @include output {
+        .explicit-theme-var {
+          // Fetch 'color' from 'dark' theme
+          color: ut.useThemeVar('color', $theme-name: 'dark');
+          // Fetch 'color' from 'light' theme, providing a default (which shouldn't be used)
+          border-left-color: ut.useThemeVar('color', $default-value: orange, $theme-name: 'light');
+          // Fetch non-existent 'background-color' from 'dark' theme, providing a default
+          background-color: ut.useThemeVar('background-color', $default-value: blue, $theme-name: 'dark');
+        }
+      }
+      @include expect {
+        .explicit-theme-var {
+          color: #fff; // dark theme color
+          border-left-color: #000; // light theme color
+          background-color: blue; // uses default as 'background-color' not in 'dark'
+        }
+      }
+    }
+  }
+}

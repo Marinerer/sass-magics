@@ -1,0 +1,272 @@
+@use 'true' as *;
+@use '../mixins/selector' as s;
+
+@include describe('mixins: _selector.scss') {
+
+  @include describe('unify-parent($child)') {
+    @include it('should unify a simple child selector with its parent') {
+      @include assert('unifies .child with .parent') {
+        @include output {
+          .parent {
+            @include s.unify-parent('.child') {
+              color: red;
+            }
+          }
+        }
+        @include expect {
+          .parent.child {
+            color: red;
+          }
+        }
+      }
+    }
+
+    @include it('should unify a multi-level child selector with its direct parent') {
+      @include assert('unifies .parent .child .grandchild with .parent .child') {
+        @include output {
+          .parent .child {
+            // unify-parent should work on the immediate parent context (&)
+            // If child is ".grandchild", it unifies with ".parent .child"
+            @include s.unify-parent('.grandchild') {
+              color: blue;
+            }
+          }
+        }
+        @include expect {
+          // The mixin should unify .grandchild with the current & context
+          // which is .parent .child, resulting in .parent .child.grandchild
+          .parent .child.grandchild {
+            color: blue;
+          }
+        }
+      }
+    }
+    
+    @include it('should handle child selector already starting with &') {
+      @include assert('unifies &--modifier with .parent') {
+        @include output {
+          .parent {
+            @include s.unify-parent('&--modifier') {
+              property: value;
+            }
+          }
+        }
+        @include expect {
+          .parent--modifier {
+            property: value;
+          }
+        }
+      }
+    }
+
+    @include it('should unify with universal selector as child') {
+      @include assert('unifies * with .parent') {
+        @include output {
+          .parent {
+            @include s.unify-parent('*') {
+              all: initial;
+            }
+          }
+        }
+        @include expect {
+          // Sass simplifies .parent.* to .parent
+          .parent {
+            all: initial;
+          }
+        }
+      }
+    }
+    
+    @include it('should unify a pseudo-class with its parent') {
+      @include assert('unifies :hover with .button') {
+        @include output {
+          .button {
+            @include s.unify-parent(':hover') {
+              background-color: lightblue;
+            }
+          }
+        }
+        @include expect {
+          .button:hover {
+            background-color: lightblue;
+          }
+        }
+      }
+    }
+  }
+
+  @include describe('limit-parent($selector, $limiter)') {
+    @include it('simple case: $selector is direct parent, $limiter is class') {
+      @include assert('.parent gets limited by .is-active') {
+        @include output {
+          .parent {
+            @include s.limit-parent('.parent', '.is-active') {
+              color: red;
+            }
+          }
+        }
+        @include expect {
+          .parent.is-active {
+            color: red;
+          }
+        }
+      }
+    }
+
+    @include it('grandparent case: $selector is grandparent, $limiter is pseudo-class') {
+      @include assert('.grandparent gets limited by :hover') {
+        @include output {
+          .grandparent .parent .child {
+            // Limit .grandparent with :hover
+            // Current & is .grandparent .parent .child
+            // Selector to find: .grandparent
+            // Limiter: :hover
+            // Expected: .grandparent:hover .parent .child
+            @include s.limit-parent('.grandparent', ':hover') {
+              color: blue;
+            }
+          }
+        }
+        @include expect {
+          .grandparent:hover .parent .child {
+            color: blue;
+          }
+        }
+      }
+    }
+    
+    @include it('selector is direct parent, $limiter is attribute selector') {
+      @include assert('.parent gets limited by [data-state="active"]') {
+        @include output {
+          .parent {
+            @include s.limit-parent('.parent', '[data-state="active"]') {
+              border: 1px solid green;
+            }
+          }
+        }
+        @include expect {
+          .parent[data-state="active"] {
+            border: 1px solid green;
+          }
+        }
+      }
+    }
+
+    @include it('$selector not found in current parent chain (should not change output)') {
+      @include assert('output remains unchanged if .foo is not in .parent .child') {
+        @include output {
+          .parent .child {
+            // .foo is not .parent or .child
+            @include s.limit-parent('.foo', '.is-limited') {
+              text-decoration: underline;
+            }
+          }
+        }
+        // Based on the mixin's current logic (str-replace with count 1),
+        // if $selector is not found, str-replace returns the original string.
+        // So, & is unchanged.
+        @include expect {
+          .parent .child {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+    
+    @include it('limiter is complex, like pseudo-class with parenthesis :nth-child(2)') {
+        @include assert('.parent gets limited by :nth-child(2)') {
+            @include output {
+                .list .item { // & is .list .item
+                    @include s.limit-parent('.item', ':nth-child(2)') {
+                        font-weight: bold;
+                    }
+                }
+            }
+            @include expect {
+                .list .item:nth-child(2) {
+                    font-weight: bold;
+                }
+            }
+        }
+    }
+
+    @include it('selector is compound, limiter is class') {
+      @include assert('.parent.foo gets limited by .is-active') {
+        @include output {
+          .parent.foo .child { // & is .parent.foo .child
+            @include s.limit-parent('.parent.foo', '.is-active') {
+              opacity: 0.5;
+            }
+          }
+        }
+        @include expect {
+          .parent.foo.is-active .child {
+            opacity: 0.5;
+          }
+        }
+      }
+    }
+    
+    @include it('selector is a type selector, limiter is class') {
+      @include assert('div (as .parent) gets limited by .highlight') {
+        @include output {
+          div.parent { // & is div.parent
+            @include s.limit-parent('div', '.highlight') {
+              padding: 10px;
+            }
+          }
+        }
+        @include expect {
+          // Expect: div.highlight.parent (Sass might reorder to div.parent.highlight)
+          // Order depends on string concatenation; .parent is part of original & after `div`.
+          // The mixin does: str-replace($current-selector, $selector, $selector + $limiter...)
+          // current-selector = "div.parent"
+          // selector = "div"
+          // limiter = ".highlight"
+          // result = "div.highlight.parent"
+          div.highlight.parent { 
+             padding: 10px;
+          }
+        }
+      }
+    }
+
+    @include it('limiter is a pseudo-element (e.g., ::before) - check behavior') {
+      @include assert('.container gets ::before limiter -- may produce unusual but testable selector') {
+        @include output {
+          .container { // & is .container
+            @include s.limit-parent('.container', '::before') {
+              content: "pseudo";
+            }
+          }
+        }
+        @include expect {
+          // Expected: .container::before
+          // This is a common pattern achieved by other means, but let's test what limit-parent does.
+          // It should produce .container::before which is a valid selector for rules applying to the pseudo-element.
+          .container::before {
+            content: "pseudo";
+          }
+        }
+      }
+    }
+    
+    @include it('should handle multi-level selector where target is not first part') {
+        @include assert('.child in .grandparent .parent .child gets limited by .is-active') {
+            @include output {
+                .grandparent .parent .child { // & is .grandparent .parent .child
+                    @include s.limit-parent('.child', '.is-active') {
+                        transform: scale(1.1);
+                    }
+                }
+            }
+            @include expect {
+                .grandparent .parent .child.is-active {
+                    transform: scale(1.1);
+                }
+            }
+        }
+    }
+
+  }
+}

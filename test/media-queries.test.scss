@@ -1,0 +1,323 @@
+@use 'true' as *;
+@use '../mixins/media-queries' as mq-module;
+@use 'sass:map'; // For map.get in tests if needed
+@use 'sass:math'; // For math.unit in tests if needed
+
+// Helper to get a fresh copy of default breakpoints for resetting state
+@function _get-default-breakpoints() {
+  @return (
+    'mobile': 320px,
+    'phablet': 480px,
+    'tablet': 768px,
+    'laptops': 1024px,
+    'desktop': 1280px,
+    'wide': 1680px
+  );
+}
+
+// Helper for epsilon adjustment in expected values, mirrors mixin logic
+@function _adjust-max-width($value) {
+  @if math.unit($value) == "px" {
+    // The mixin uses 0.02px for px values
+    @return $value - 0.02px;
+  } @else if math.unit($value) == "em" or math.unit($value) == "rem" {
+    @return $value - 0.001em;
+  } @else if not math.is-unitless($value) {
+    @return $value - 0.02; 
+  } @else { 
+    @return $value - 0.02;
+  }
+}
+
+@include describe('mixins: media-queries') {
+
+  @include describe('change-breakpoints') {
+    @include it('should allow adding a new breakpoint and use it with mq') {
+      @include mq-module.change-breakpoints($key: 'new-bp', $point: 1000px);
+      @include assert('mq uses the new breakpoint for min-width') {
+        @include output {
+          @include mq-module.mq($min: 'new-bp') {
+            color: red;
+          }
+        }
+        @include expect {
+          @media (min-width: 1000px) {
+            color: red;
+          }
+        }
+      }
+      // Reset to default state
+      @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+    }
+
+    @include it('should allow modifying an existing breakpoint (e.g., mobile)') {
+      @include mq-module.change-breakpoints($key: 'mobile', $point: 350px);
+      @include assert('mq uses the modified breakpoint for min-width') {
+        @include output {
+          @include mq-module.mq($min: 'mobile') {
+            color: blue;
+          }
+        }
+        @include expect {
+          @media (min-width: 350px) {
+            color: blue;
+          }
+        }
+      }
+      @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+    }
+
+    @include it('should allow deleting a breakpoint (e.g., wide)') {
+      @include mq-module.change-breakpoints($key: 'wide', $point: null); // Delete 'wide'
+      @include assert('mq does not find "wide", should result in no min-width for it') {
+        @include output {
+          @include mq-module.mq($min: 'wide', $max: 2000px) { 
+            content: "no-wide-min";
+          }
+        }
+        @include expect {
+           @media (max-width: #{_adjust-max-width(2000px)}) {
+            content: "no-wide-min";
+          }
+        }
+      }
+      @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+    }
+
+    @include it('should allow replacing the entire breakpoint map') {
+      $custom-bps: ('small': 100px, 'medium': 200px, 'large': 300px);
+      @include mq-module.change-breakpoints($new-map: $custom-bps);
+      @include assert('mq uses a breakpoint from the new custom map') {
+        @include output {
+          @include mq-module.mq($min: 'medium') {
+            font-size: 16px;
+          }
+        }
+        @include expect {
+          @media (min-width: 200px) {
+            font-size: 16px;
+          }
+        }
+      }
+      @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+    }
+     @include it('should handle deleting a non-existent key gracefully') {
+      // No actual change to breakpoints map should occur, expect a warning (not testable here)
+      @include mq-module.change-breakpoints($key: 'non-existent-for-delete', $point: null);
+      // Verify a known breakpoint still works
+      @include assert('known breakpoint "tablet" still exists after trying to delete non-existent key') {
+        @include output { @include mq-module.mq($min: 'tablet') { color: #ccc; } }
+        @include expect { @media (min-width: 768px) { color: #ccc; } }
+      }
+       @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+    }
+
+  }
+
+  @include describe('_get-breakpoint (indirectly via mq)') {
+    @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+
+    @include it('should return breakpoint value for an existing key') {
+      @include assert('mq uses "tablet" breakpoint value (768px) for min-width') {
+        @include output {
+          @include mq-module.mq($min: 'tablet') { color: green; }
+        }
+        @include expect {
+          @media (min-width: 768px) { color: green; }
+        }
+      }
+    }
+
+    @include it('should handle non-existent breakpoint key for min-width in mq') {
+      @include assert('mq produces no min-width media query part for a non-existent key') {
+        @include output {
+          @include mq-module.mq($min: 'non-existent-bp', $orientation: 'landscape') { display: none; }
+        }
+        @include expect {
+          @media (orientation: landscape) { display: none; }
+        }
+      }
+    }
+     @include it('should handle non-existent breakpoint key for max-width in mq') {
+      @include assert('mq produces no max-width media query part for a non-existent key') {
+        @include output {
+          @include mq-module.mq($max: 'non-existent-bp', $orientation: 'portrait') { visibility: hidden; }
+        }
+        @include expect {
+          @media (orientation: portrait) { visibility: hidden; }
+        }
+      }
+    }
+  }
+  
+  @include describe('respond-to (uses dynamic _breakpoints-segment)') {
+    @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+
+    @include it('should create min-width and max-width for "tablet" segment') {
+      // Default: tablet (768px) to laptops (1024px, exclusive end)
+      @include assert('outputs min for tablet (768px) and max for laptops-exclusive') {
+        @include output { @include mq-module.respond-to('tablet') { padding: 10px; } }
+        @include expect {
+          @media (min-width: 768px) and (max-width: #{_adjust-max-width(1024px)}) { padding: 10px; }
+        }
+      }
+    }
+
+    @include it('should handle "mobile" segment (smallest with a defined next segment)') {
+      // Default: mobile (320px) to phablet (480px, exclusive end)
+       @include assert('outputs min for mobile (320px) and max for phablet-exclusive') {
+        @include output { @include mq-module.respond-to('mobile') { font-weight: bold; } }
+        @include expect {
+          @media (min-width: 320px) and (max-width: #{_adjust-max-width(480px)}) { font-weight: bold; }
+        }
+      }
+    }
+    
+    @include it('should handle "wide" (largest breakpoint) as min-width only by respond-to') {
+      // 'wide' is the largest, _breakpoints-segment won't define it as a key for a range.
+      // respond-to should fall back to min-width for 'wide'.
+      @include assert('outputs only min-width for "wide" (1680px)') {
+        @include output { @include mq-module.respond-to('wide') { margin: 20px; } }
+        @include expect {
+          @media (min-width: 1680px) { margin: 20px; }
+        }
+      }
+    }
+
+     @include it('should handle a key not in dynamic segments but is a valid breakpoint (e.g. after deleting next one)') {
+      // Test case: delete 'phablet'. Now 'mobile' has no 'next' in dynamic segments.
+      // respond-to('mobile') should then become min-width only.
+      @include mq-module.change-breakpoints($key: 'phablet', $point: null);
+      @include assert('respond-to("mobile") is min-width only if "phablet" is deleted') {
+        @include output {
+          @include mq-module.respond-to('mobile') { border: 1px solid red; }
+        }
+        @include expect {
+          @media (min-width: 320px) { border: 1px solid red; }
+        }
+      }
+      @include mq-module.change-breakpoints($new-map: _get-default-breakpoints()); // Reset
+    }
+  }
+
+  @include describe('mq mixin comprehensive tests') {
+    @include mq-module.change-breakpoints($new-map: _get-default-breakpoints());
+
+    @include it('min-width only (number)') {
+      @include assert('outputs (min-width: 500px)') {
+        @include output { @include mq-module.mq($min: 500px) { color: red; } }
+        @include expect { @media (min-width: 500px) { color: red; } }
+      }
+    }
+    @include it('min-width only (key: tablet)') {
+      @include assert('outputs (min-width: 768px)') {
+        @include output { @include mq-module.mq($min: 'tablet') { color: blue; } }
+        @include expect { @media (min-width: 768px) { color: blue; } }
+      }
+    }
+
+    @include it('max-width only (number: 800px)') {
+      @include assert('outputs (max-width: adjusted 800px)') {
+        @include output { @include mq-module.mq($max: 800px) { color: green; } }
+        @include expect { @media (max-width: #{_adjust-max-width(800px)}) { color: green; } }
+      }
+    }
+    @include it('max-width only (key: laptops)') { // laptops is 1024px
+      @include assert('outputs (max-width: adjusted 1024px)') {
+        @include output { @include mq-module.mq($max: 'laptops') { color: purple; } }
+        @include expect { @media (max-width: #{_adjust-max-width(1024px)}) { color: purple; } }
+      }
+    }
+
+    @include it('min (number) and max (number)') {
+      @include assert('min:500px and max:adjusted 800px') {
+        @include output { @include mq-module.mq($min: 500px, $max: 800px) { font-size: 1rem; } }
+        @include expect { @media (min-width: 500px) and (max-width: #{_adjust-max-width(800px)}) { font-size: 1rem; } }
+      }
+    }
+    @include it('min (key: mobile) and max (key: tablet)') { // mobile 320, tablet 768
+      @include assert('min:320px and max:adjusted 768px') {
+        @include output { @include mq-module.mq($min: 'mobile', $max: 'tablet') { line-height: 1.5; } }
+        @include expect { @media (min-width: 320px) and (max-width: #{_adjust-max-width(768px)}) { line-height: 1.5; } }
+      }
+    }
+
+    @include it('orientation: landscape') {
+      @include assert('orientation: landscape') {
+        @include output { @include mq-module.mq($orientation: 'landscape') { display: flex; } }
+        @include expect { @media (orientation: landscape) { display: flex; } }
+      }
+    }
+    @include it('orientation: portrait') {
+      @include assert('orientation: portrait') {
+        @include output { @include mq-module.mq($orientation: 'portrait') { display: block; } }
+        @include expect { @media (orientation: portrait) { display: block; } }
+      }
+    }
+
+    @include it('$and parameter: (hover: hover) with parens') {
+      @include assert('custom (hover: hover)') {
+        @include output { @include mq-module.mq($and: '(hover: hover)') { cursor: pointer; } }
+        @include expect { @media (hover: hover) { cursor: pointer; } }
+      }
+    }
+     @include it('$and parameter without outer parens: "color-index"') {
+      @include assert('custom (color-index)') {
+        @include output { @include mq-module.mq($and: 'color-index') { outline: 1px solid; } }
+        @include expect { @media (color-index) { outline: 1px solid; } }
+      }
+    }
+
+    @include it('$media-type: screen') {
+      @include assert('media-type: screen') {
+        @include output { @include mq-module.mq($media-type: 'screen') { background: #fff; } }
+        @include expect { @media screen { background: #fff; } }
+      }
+    }
+    
+    @include it('complex: min (key), max (number), orientation, $and (with parens), $media-type') {
+      // min: 'phablet' (480px), max: 900px, orientation: landscape, and: (scan: progressive), media-type: print
+      @include assert('complex query with parens in $and') {
+        @include output { 
+          @include mq-module.mq($min: 'phablet', $max: 900px, $orientation: 'landscape', $and: '(scan: progressive)', $media-type: 'print') {
+            text-decoration: underline;
+          }
+        }
+        @include expect { 
+          @media print and (min-width: 480px) and (max-width: #{_adjust-max-width(900px)}) and (orientation: landscape) and (scan: progressive) {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    @include it('complex: min (num), max (key), orientation, $and (no parens), $media-type') {
+      // min: 600px, max: 'desktop' (1280px), orientation: portrait, and: 'update: fast', media-type: speech
+      @include assert('complex query no parens in $and') {
+        @include output { 
+          @include mq-module.mq($min: 600px, $max: 'desktop', $orientation: 'portrait', $and: 'update: fast', $media-type: 'speech') {
+            speak: normal;
+          }
+        }
+        @include expect { 
+          @media speech and (min-width: 600px) and (max-width: #{_adjust-max-width(1280px)}) and (orientation: portrait) and (update: fast) {
+            speak: normal;
+          }
+        }
+      }
+    }
+    
+    @include it('mq with no conditions should default to "all"') {
+      @include assert('outputs @media all') {
+        @include output { @include mq-module.mq() { margin: 0; } }
+        @include expect { @media all { margin: 0; } }
+      }
+    }
+     @include it('mq with $media-type "screen" and no other conditions') {
+      @include assert('outputs @media screen') {
+        @include output { @include mq-module.mq($media-type: 'screen') { padding: 0; } }
+        @include expect { @media screen { padding: 0; } }
+      }
+    }
+  }
+}

@@ -1,3 +1,5 @@
+@use 'sass:map';
+
 /// 切换主题
 /// @mixin useTheme
 /// @example scss
@@ -20,22 +22,55 @@ $_themes: (
   )
 ) !default;
 
-/// 定义全局theme变量, 用于useTheme中收集依赖
-$_currentTheme: light;
+// Configurable default theme name
+$_default-theme-name: light !default;
+
+// $_currentTheme is a global variable to track the theme context during useTheme's loop.
+// Initialize to null to indicate it's not yet set by the useTheme loop.
+$_currentTheme: null !global;
 
 @mixin useTheme() {
+  $previous-current-theme-value-for-this-mixin-call: $_currentTheme; // Save outer context
   @each $key, $value in $_themes {
-    $_currentTheme: $key !global; // 指向全局_currentTheme, 否则为局部变量
+    $_currentTheme: $key !global; // Set for current iteration
     html[data-theme="#{$key}"] & {
-      @content;
+      @content; // useThemeVar inside here will see the iterated $_currentTheme
     }
   }
+  $_currentTheme: $previous-current-theme-value-for-this-mixin-call !global; // Restore outer context
 }
 
 /// 获取当前主题变量
 /// @param {string} $name 变量名
-/// @return {string} 变量值
-@function useThemeVar($name) {
-  $themeMap: map-get($_themes, $_currentTheme); // 获取遍历的当前主题
-  @return map-get($themeMap, $name);
+/// @param {any} $default-value [null] - 值不存在时的默认返回值
+/// @param {string} $name 变量名
+/// @param {any} $default-value [null] - 值不存在时的默认返回值
+/// @param {string | null} $theme-name [null] - 指定主题名称，为null则使用当前主题或默认主题
+/// @return {any} 变量值
+@function useThemeVar($name, $default-value: null, $theme-name: null) {
+  $theme-to-fetch: null;
+
+  @if $theme-name != null {
+    $theme-to-fetch: $theme-name; // Explicit $theme-name always wins
+  } @else if $_currentTheme != null and map.has-key($_themes, $_currentTheme) {
+    // If $_currentTheme is set by useTheme() loop and is a valid key
+    $theme-to-fetch: $_currentTheme;
+  } @else {
+    // Fallback to the module's configured default theme name
+    $theme-to-fetch: $_default-theme-name;
+  }
+
+  @if not map.has-key($_themes, $theme-to-fetch) {
+    @warn "Theme '#{$theme-to-fetch}' not found. Available themes: #{map.keys($_themes)}.";
+    @return $default-value;
+  }
+
+  $theme-map: map.get($_themes, $theme-to-fetch);
+
+  @if not map.has-key($theme-map, $name) {
+    // Variable not found in the specified theme map.
+    @return $default-value;
+  }
+
+  @return map.get($theme-map, $name);
 }

@@ -1,0 +1,88 @@
+@use 'true' as *;
+@use '../mixins/center' as *;
+
+@include describe('mixin: center') {
+  @include it('flex-center') {
+    @include assert('should output flex centering properties') {
+      @include output {
+        @include flex-center;
+      }
+      @include expect {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+  }
+
+  @include it('position-center with auto width') {
+    @include assert('should output position centering with auto width') {
+      @include output {
+        @include position-center; // Test with default width: auto
+      }
+      @include expect {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    }
+  }
+
+  @include it('position-center with specified width') {
+    @include assert('should output position centering with specified width') {
+      @include output {
+        @include position-center(300px);
+      }
+      @include expect {
+        width: 300px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    }
+  }
+
+  @include it('inline-center with no text-align') {
+    @include assert('should output inline vertical centering') {
+      @include output {
+        // SCSS-True requires a selector for pseudo-elements
+        .test-inline-center {
+          @include inline-center;
+        }
+      }
+      @include expect {
+        .test-inline-center::after {
+          content: "";
+          display: inline-block;
+          width: 0;
+          height: 100%;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+
+  @include it('inline-center with text-align: center') {
+    @include assert('should output inline vertical centering with text-align') {
+      @include output {
+        .test-inline-center-aligned {
+          @include inline-center(center);
+        }
+      }
+      @include expect {
+        .test-inline-center-aligned {
+          text-align: center;
+        }
+        .test-inline-center-aligned::after {
+          content: "";
+          display: inline-block;
+          width: 0;
+          height: 100%;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+}
