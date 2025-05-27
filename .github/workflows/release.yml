@@ -37,7 +37,7 @@ jobs:
           release-type: node
           package-name: sass-magics
           token: ${{ secrets.GH_RELEASE_TOKEN }}
-          changelog-types: '[{"type":"feat","section":"🚀 Features","hidden":false},{"type":"fix","section":"🐛 Bug Fixes","hidden":false},{"type":"perf","section":"🌟 Performance","hidden":false},{"type":"chore","section":"🚚 Miscellaneous","hidden":false}]'
+          changelog-types: '[{"type":"feat","section":"🚀 Features","hidden":false},{"type":"fix","section":"🐛 Bug Fixes","hidden":false},{"type":"perf","section":"🌟 Performance","hidden":false},{"type":"chore","section":"🚚 Miscellaneous","hidden":false},{"type":"refactor","section":"♻️ Code Refactoring","hidden":false}]'
           # release-as: v1.0.0
           prerelease: false
       
